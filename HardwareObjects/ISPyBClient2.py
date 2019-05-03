@@ -138,6 +138,8 @@ class ISPyBClient2(HardwareObject):
         self.ws_root = None
         self.ws_username = None
         self.ws_password = None
+
+        self.login_name = None
         
     def init(self):
         """
@@ -606,8 +608,11 @@ class ISPyBClient2(HardwareObject):
 
         if not ok:
             msg="%s." % msg.capitalize()
+            self.login_name = None
             # refuse Login
             return {'status':{ "code": "error", "msg": msg }, 'Proposal': None, 'session': None}
+        else:
+            self.login_name = login_name
 
         # login succeed, get proposal and sessions
         #logging.getLogger('HWR').debug('Logged in: querying ISPyB database...')
@@ -651,6 +656,9 @@ class ISPyBClient2(HardwareObject):
 
         ok, msg=ldap_connection.login(login_name,psd)
         return ok, msg
+
+    def get_login_name(self):
+        return self.login_name
 
     def get_todays_session(self, prop):
         logging.getLogger('HWR').debug('getting proposal for todays session')
