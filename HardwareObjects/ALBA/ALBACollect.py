@@ -74,6 +74,7 @@ class ALBACollect(AbstractCollect):
         self.graphics_manager_hwobj = None
         self.autoprocessing_hwobj = None
         self.flux_hwobj = None
+        self.datamanag_hwobj = None
 
         self.cmd_ni_conf = None
         self.cmd_ni_unconf = None
@@ -117,6 +118,7 @@ class ALBACollect(AbstractCollect):
         self.graphics_manager_hwobj = self.getObjectByRole("graphics_manager")
         self.autoprocessing_hwobj = self.getObjectByRole("auto_processing")
         self.flux_hwobj = self.getObjectByRole("flux")
+        self.datamanag_hwobj = self.getObjectByRole("datamanagement")
 
         self.cmd_ni_conf = self.getCommandObject("ni_configure")
         self.cmd_ni_unconf = self.getCommandObject("ni_unconfigure")
@@ -252,6 +254,8 @@ class ALBACollect(AbstractCollect):
 
         first_image_no = osc_seq['start_image_number']
 
+        self.start_data_management()
+
         if exp_type == 'OSC' or (exp_type == 'Characterization' and nb_images == 1):
             final_pos = self.prepare_collection(
                 start_angle=omega_pos,
@@ -267,6 +271,8 @@ class ALBACollect(AbstractCollect):
                 self.collect_images(final_pos, 1, first_image_no)
                 first_image_no += 1
                 omega_pos += 90
+
+        self.end_data_management()
 
     def collect_images(self, final_pos, nb_images, first_image_no):
         #
@@ -970,6 +976,28 @@ class ALBACollect(AbstractCollect):
         if event == "after":
             dc_pars = self.current_dc_parameters
             self.autoprocessing_hwobj.trigger_auto_processing(dc_pars)
+
+    def start_data_management(self):
+        if self.datamanag_hwobj:
+            try:
+                proposal = self.lims_client_hwobj.get_login_name() 
+                self.datamanag_hwobj.start(proposal, self.current_dc_parameters)
+            except:
+                import traceback
+                logging.getLogger("HWR").error("Cannot start metadata collection")
+                logging.getLogger("HWR").error(  traceback.format_exc() )
+                
+    def end_data_management(self):
+        if self.datamanag_hwobj:
+            try:
+                proposal = self.lims_client_hwobj.get_login_name() 
+                self.datamanag_hwobj.end(proposal, self.current_dc_parameters)
+            except:
+                import traceback
+                logging.getLogger("HWR").error("Cannot start metadata collection")
+                logging.getLogger("HWR").error(  traceback.format_exc() )
+                
+         
 
 
 def test_hwo(hwo):
