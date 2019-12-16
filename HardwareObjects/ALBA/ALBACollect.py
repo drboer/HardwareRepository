@@ -43,6 +43,8 @@ from HardwareRepository.TaskUtils import task
 from AbstractCollect import AbstractCollect
 from taurus.core.tango.enums import DevState
 from resolution import get_dettaby, get_resolution
+from HardwareRepository.Utils import fmt_logger
+
 
 __credits__ = ["ALBA Synchrotron"]
 __version__ = "2.3"
@@ -99,6 +101,7 @@ class ALBACollect(AbstractCollect):
 
         self.bypass_shutters = False
 
+    @fmt_logger
     def init(self):
         self.logger.debug("Initializing {0}".format(self.__class__.__name__))
         self.ready_event = gevent.event.Event()
@@ -165,13 +168,13 @@ class ALBACollect(AbstractCollect):
 
         self.bypass_shutters = bool(os.environ.get('MXCUBE_BYPASS_SHUTTERS'))
         if self.bypass_shutters:
-            self.logger.warning("Starting MXCuBE BYPASSING the SHUTTERS")
+            self.logger.warning("Check shutters: bypassed")
 
     def data_collection_hook(self):
         """Main collection hook
         """
 
-        self.logger.info("Running ALBA data collection hook")
+        self.logger.info("START data_collection_hook")
         self.logger.info("Waiting for resolution ready...")
         self.resolution_hwobj.wait_end_of_move()
         self.logger.info("Waiting for detector distance ready...")
