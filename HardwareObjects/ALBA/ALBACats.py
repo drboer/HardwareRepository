@@ -33,6 +33,7 @@ from __future__ import print_function
 import logging
 import time
 
+from HardwareRepository.Utils import log_inout, timeit
 from sample_changer.Cats90 import Cats90, SampleChangerState, TOOL_SPINE
 
 __credits__ = ["ALBA Synchrotron"]
@@ -68,8 +69,8 @@ class ALBACats(Cats90):
 
         self.auto_prepare_diff = None
 
+    @log_inout
     def init(self):
-        self.logger.debug("Initializing {0}".format(self.__class__.__name__))
         Cats90.init(self)
         # TODO: Migrate to taurus channels instead of tango channels
         self.shifts_channel = self.getChannelObject("shifts")
@@ -106,6 +107,7 @@ class ALBACats(Cats90):
             self.state == SampleChangerState.StandBy or \
             self.state == SampleChangerState.Disabled
 
+    @log_inout
     def diff_send_transfer(self):
         """
         Checks if beamline supervisor is in TRANSFER phase (i.e. sample changer in
@@ -123,6 +125,7 @@ class ALBACats(Cats90):
         ret = self._wait_phase_done('TRANSFER')
         return ret
 
+    @log_inout
     def diff_send_sampleview(self):
         """
         Checks if beamline supervisor is in SAMPLE phase (i.e. sample changer in SAMPLE
@@ -158,6 +161,7 @@ class ALBACats(Cats90):
                 self.logger.error("Supervisor is in ON state. Returning")
                 break
 
+    @log_inout
     def _wait_phase_done(self, final_phase):
         """
         Method to wait a phase change. When supervisor reaches the final phase, the
@@ -214,6 +218,8 @@ class ALBACats(Cats90):
         """
         return self.phase_channel.getValue()
 
+    @log_inout
+    @timeit
     def load(self, sample=None, wait=False, wash=False):
         """
         Loads a sample. Overides to include ht basket.
@@ -253,6 +259,8 @@ class ALBACats(Cats90):
         return self._executeTask(SampleChangerState.Loading,
                                  wait, self._doLoad, sample, None, use_ht)
 
+    @log_inout
+    @timeit
     def unload(self, sample_slot=None, wait=False):
         """
         Unload the sample. If sample_slot=None, unloads to the same slot the sample was
@@ -301,6 +309,7 @@ class ALBACats(Cats90):
         """
         self.emit('powerStateChanged', (value, ))
 
+    @log_inout
     def _doLoad(self, sample=None, shifts=None, use_ht=False, waitsafe=True):
         """
         Loads a sample on the diffractometer. Performs a simple put operation if the
@@ -507,6 +516,7 @@ class ALBACats(Cats90):
         self._waitDeviceSafe()
         # self._waitDeviceReady()
 
+    @log_inout
     def _doUnload(self, sample_slot=None, shifts=None):
         """
         Unloads a sample from the diffractometer.
@@ -558,6 +568,7 @@ class ALBACats(Cats90):
         else:
             cmd_ret = self._executeServerTask(self._cmdUnload, argin)
 
+    @log_inout
     def _doAbort(self):
         """
         Aborts a running trajectory on the sample changer.

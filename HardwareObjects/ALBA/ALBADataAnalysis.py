@@ -36,6 +36,7 @@ from DataAnalysis import DataAnalysis
 from XSDataMXCuBEv1_3 import XSDataResultMXCuBE
 from XSDataCommon import XSDataFile, XSDataString
 #from ALBAClusterClient import XalocJob
+from HardwareRepository.Utils import log_inout, timeit
 from ALBAClusterJob import ALBAStrategyJob
 
 __credits__ = ["ALBA Synchrotron"]
@@ -56,10 +57,11 @@ class ALBADataAnalysis(DataAnalysis):
         self.input_file = None
         self.results_file = None
 
+    @log_inout
     def init(self):
-        self.logger.debug("Initializing {0}".format(self.__class__.__name__))
         DataAnalysis.init(self)
 
+    @log_inout
     def prepare_edna_input(self, edna_input, edna_directory):
 
         # used for strategy calculation (characterization) using data analysis cluster
@@ -72,6 +74,8 @@ class ALBADataAnalysis(DataAnalysis):
         output_dir.setPath(path)
         edna_input.setOutputFileDirectory(output_dir)
 
+    @log_inout
+    @timeit
     def run_edna(self, dc_id, input_file, results_file, edna_directory):
         return self.run(dc_id, input_file, results_file, edna_directory)
 
@@ -128,8 +132,8 @@ class ALBADataAnalysis(DataAnalysis):
         # outpath = os.path.join(dirname,'RESULTS',basename)
         return out_path
 
+    @timeit
     def wait_done(self):
-
         state = None
         time.sleep(0.5)
         self.logger.debug("Polling for Job state")
@@ -149,6 +153,7 @@ class ALBADataAnalysis(DataAnalysis):
         self.logger.debug("Returning %s" % str(state))
         return state
 
+    @log_inout
     def get_result(self):
 
         jobstatus = self.job.job.status

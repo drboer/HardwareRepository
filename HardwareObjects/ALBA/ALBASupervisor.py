@@ -33,6 +33,7 @@ from __future__ import print_function
 
 import logging
 
+from HardwareRepository.Utils import log_inout, timeit
 from HardwareRepository.BaseHardwareObjects import Device
 
 __credits__ = ["ALBA"]
@@ -57,6 +58,7 @@ class ALBASupervisor(Device):
         self.current_phase = None
         self.detector_cover_opened = None
 
+    @log_inout
     def init(self):
         self.logger.debug("Initializing {0}".format(self.__class__.__name__))
         self.cmd_go_collect = self.getCommandObject("go_collect")
@@ -90,15 +92,23 @@ class ALBASupervisor(Device):
     def get_current_phase(self):
         return self.chan_phase.getValue()
 
+    @log_inout
+    @timeit
     def go_collect(self):
         return self.cmd_go_collect()
 
+    @log_inout
+    @timeit
     def go_transfer(self):
         return self.cmd_go_transfer()
 
+    @log_inout
+    @timeit
     def go_sample_view(self):
         return self.cmd_go_sample_view()
 
+    @log_inout
+    @timeit
     def go_beam_view(self):
         return self.cmd_go_beam_view()
 

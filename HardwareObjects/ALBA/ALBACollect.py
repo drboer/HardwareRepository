@@ -40,10 +40,10 @@ import gevent
 import logging
 
 from HardwareRepository.TaskUtils import task
+from HardwareRepository.Utils import log_inout, timeit
 from AbstractCollect import AbstractCollect
 from taurus.core.tango.enums import DevState
 from resolution import get_dettaby, get_resolution
-from HardwareRepository.Utils import fmt_logger
 
 
 __credits__ = ["ALBA Synchrotron"]
@@ -101,11 +101,9 @@ class ALBACollect(AbstractCollect):
 
         self.bypass_shutters = False
 
-    @fmt_logger
+    @log_inout
     def init(self):
-        self.logger.debug("Initializing {0}".format(self.__class__.__name__))
         self.ready_event = gevent.event.Event()
-
         self.supervisor_hwobj = self.getObjectByRole("supervisor")
         self.fastshut_hwobj = self.getObjectByRole("fast_shutter")
         self.slowshut_hwobj = self.getObjectByRole("slow_shutter")
@@ -170,11 +168,11 @@ class ALBACollect(AbstractCollect):
         if self.bypass_shutters:
             self.logger.warning("Check shutters: bypassed")
 
+    @log_inout
+    @timeit
     def data_collection_hook(self):
         """Main collection hook
         """
-
-        self.logger.info("START data_collection_hook")
         self.logger.info("Waiting for resolution ready...")
         self.resolution_hwobj.wait_end_of_move()
         self.logger.info("Waiting for detector distance ready...")
@@ -278,26 +276,28 @@ class ALBACollect(AbstractCollect):
                 first_image_no += 1
                 omega_pos += 90
 
+    @log_inout
+    @timeit
     def collect_images(self, final_pos, nb_images, first_image_no):
-        #
-        # Run
-        #
-        self.logger.info("Collecting images, by moving omega to %s" % final_pos)
+        self.logger.info("Collecting images: moving omega to %s" % final_pos)
         self.omega_hwobj.move(final_pos)
         self.wait_collection_done(nb_images, first_image_no)
         self.data_collection_end()
         self.collection_finished()
 
+    @log_inout
     def data_collection_end(self):
         self.omega_hwobj.set_velocity(60)
         self.unconfigure_ni()
 
+    @log_inout
     def data_collection_failed(self):
-        self.logger.info("Data collection failed")
         AbstractCollect.data_collection_failed()
         self.collect_failed()
         # recovering sequence should go here
 
+    @log_inout
+    @timeit
     def prepare_acquisition(self):
 
         fileinfo = self.current_dc_parameters['fileinfo']
@@ -352,6 +352,8 @@ class ALBACollect(AbstractCollect):
 
         return detok
 
+    @log_inout
+    @timeit
     def prepare_collection(self, start_angle, nb_images, first_image_no):
         osc_seq = self.current_dc_parameters['oscillation_sequence'][0]
 
@@ -418,6 +420,7 @@ class ALBACollect(AbstractCollect):
 
         return final_pos
 
+    @log_inout
     def write_image_headers(self, start_angle):
         fileinfo = self.current_dc_parameters['fileinfo']
         basedir = fileinfo['directory']
@@ -491,6 +494,7 @@ class ALBACollect(AbstractCollect):
 
         self.detector_hwobj.set_image_headers(self.image_headers, angle_info)
 
+    @log_inout
     def wait_collection_done(self, nb_images, first_image_no):
 
         # Deprecated
@@ -504,6 +508,8 @@ class ALBACollect(AbstractCollect):
         self.omega_hwobj.wait_end_of_move(timeout=720)
         self.wait_save_image(last_image_no)
 
+    @log_inout
+    @timeit
     def wait_save_image(self, frame_number, timeout=25):
 
         fileinfo = self.current_dc_parameters['fileinfo']
@@ -550,6 +556,7 @@ class ALBACollect(AbstractCollect):
 
         return True
 
+    @log_inout
     def check_shutters(self):
 
         # Shutters ready: 1, 1, 1, 1
@@ -575,13 +582,14 @@ class ALBACollect(AbstractCollect):
         headers = []
         return headers
 
+    @log_inout
     def collection_end(self):
         #
         # data collection end (or abort)
         #
-        self.logger.info(" finishing data collection ")
         self.emit("progressStop")
 
+    @log_inout
     def data_collection_cleanup(self):
         self.logger.debug("Cleanup: moving omega to initial position %s" % self.omega_init_pos)
         #try:
@@ -597,8 +605,6 @@ class ALBACollect(AbstractCollect):
         #    self.omega_hwobj.move(self.omega_init_pos)
             
         AbstractCollect.data_collection_cleanup(self)
-        self.logger.debug("ALBA data_collection_cleanup finished")
-        
 
     def check_directory(self, basedir):
         if not os.path.exists(basedir):
@@ -609,9 +615,11 @@ class ALBACollect(AbstractCollect):
                 if e.errno != errno.EEXIST:
                     raise
 
+    @log_inout
     def collect_finished(self, green):
-        self.logger.info("Data collection finished")
+        pass
 
+    @log_inout
     def collect_failed(self, par):
         self.logger.exception("Data collection failed")
         self.current_dc_parameters["status"] = 'failed'
@@ -624,6 +632,8 @@ class ALBACollect(AbstractCollect):
         self.omega_hwobj.stop()
         self.data_collection_end()
 
+    @log_inout
+    @timeit
     def go_to_collect(self, timeout=180):
         self.logger.debug("Sending supervisor to collect phase")
         self.supervisor_hwobj.go_collect()
@@ -645,12 +655,13 @@ class ALBACollect(AbstractCollect):
 
         return self.is_collect_phase()
 
+    @log_inout
     def is_collect_phase(self):
-        self.logger.debug("In is_collect_phase method")
         return self.supervisor_hwobj.get_current_phase().upper() == "COLLECT"
 
+    @log_inout
+    @timeit
     def go_to_sampleview(self, timeout=180):
-        self.logger.debug("Sending supervisor to sample view phase")
         self.supervisor_hwobj.go_sample_view()
 
         gevent.sleep(0.5)
@@ -673,15 +684,18 @@ class ALBACollect(AbstractCollect):
     def is_sampleview_phase(self):
         return self.supervisor_hwobj.get_current_phase().upper() == "SAMPLE"
 
+    @log_inout
     def configure_ni(self, startang, total_dist):
         self.logger.debug(
             "Configuring NI660 with pars 0, %s, %s, 0, 1" %
             (startang, total_dist))
         self.cmd_ni_conf(0.0, startang, total_dist, 0, 1)
 
+    @log_inout
     def unconfigure_ni(self):
         self.cmd_ni_unconf()
 
+    @log_inout
     def open_safety_shutter(self):
         """ implements prepare_shutters in collect macro """
 
@@ -699,9 +713,11 @@ class ALBACollect(AbstractCollect):
         if self.frontend_hwobj.getState() != 0:
             self.frontend_hwobj.open()
 
+    @log_inout
     def open_detector_cover(self):
         self.supervisor_hwobj.open_detector_cover()
 
+    @log_inout
     def open_fast_shutter(self):
         # self.fastshut_hwobj.open()
         # this function is empty for ALBA. we are not opening the fast shutter.
@@ -710,18 +726,22 @@ class ALBACollect(AbstractCollect):
         # other three
         pass
 
+    @log_inout
     def close_fast_shutter(self):
         self.fastshut_hwobj.cmdOut()
 
+    @log_inout
     def close_safety_shutter(self):
         #  we will not close safety shutter during collections
         pass
 
+    @log_inout
     def close_detector_cover(self):
         #  we will not close detector cover during collections
         #  self.supervisor.close_detector_cover()
         pass
 
+    @log_inout
     def set_helical_pos(self, arg):
         """
         Descript. : 8 floats describe
@@ -733,6 +753,7 @@ class ALBACollect(AbstractCollect):
                                   arg["2"]["phiy"], arg["2"]["phiz"],
                                   arg["2"]["sampx"], arg["2"]["sampy"]]
 
+    @log_inout
     def setMeshScanParameters(self, num_lines, num_images_per_line, mesh_range):
         """
         Descript. :
@@ -750,6 +771,7 @@ class ALBACollect(AbstractCollect):
         self.graphics_manager_hwobj.save_scene_snapshot(filename)
         self.logger.debug("Crystal snapshot saved (%s)" % filename)
 
+    @log_inout
     def set_energy(self, value):
         """
         Descript. : This is Synchronous to be able to calculate the resolution @ ALBA
@@ -759,6 +781,7 @@ class ALBACollect(AbstractCollect):
         self.energy_hwobj.move_energy(value)
         self.energy_hwobj.wait_move_energy_done()
 
+    @log_inout
     def set_wavelength(self, value):
         """
         Descript. :
@@ -768,15 +791,18 @@ class ALBACollect(AbstractCollect):
         self.energy_hwobj.move_wavelength(value)
         self.energy_hwobj.wait_move_wavelength_done()
 
+    @log_inout
     def get_energy(self):
         return self.energy_hwobj.get_energy()
 
+    @log_inout
     def set_transmission(self, value):
         """
         Descript. :
         """
         self.transmission_hwobj.set_value(value)
 
+    @log_inout
     def set_resolution(self, value,  energy=None):
         """
         Descript. : resolution is a motor in out system
@@ -792,6 +818,7 @@ class ALBACollect(AbstractCollect):
 
         self.resolution_hwobj.move(value)
 
+    @log_inout
     def move_detector(self, value):
         self.detector_hwobj.move_distance(value)
 
@@ -802,6 +829,7 @@ class ALBACollect(AbstractCollect):
         """
         self.diffractometer_hwobj.move_motors(motor_position_dict)
 
+    @log_inout
     def create_file_directories(self):
         """
         Method create directories for raw files and processing files.
@@ -837,6 +865,7 @@ class ALBACollect(AbstractCollect):
         if auto_directory:
             self.current_dc_parameters["auto_dir"] = auto_directory
 
+    @log_inout
     def prepare_input_files(self):
         """
         Descript. :
@@ -915,6 +944,7 @@ class ALBACollect(AbstractCollect):
         if self.transmission_hwobj is not None:
             return self.transmission_hwobj.getAttFactor()
 
+    @log_inout
     def get_undulators_gaps(self):
         """
         Descript. : return triplet with gaps. In our case we have one gap,
@@ -933,6 +963,7 @@ class ALBACollect(AbstractCollect):
             pass
         return {}
 
+    @log_inout
     def get_beam_size(self):
         """
         Descript. :
@@ -940,6 +971,7 @@ class ALBACollect(AbstractCollect):
         if self.beam_info_hwobj is not None:
             return self.beam_info_hwobj.get_beam_size()
 
+    @log_inout
     def get_slit_gaps(self):
         """
         Descript. :
@@ -948,6 +980,7 @@ class ALBACollect(AbstractCollect):
             return self.beam_info_hwobj.get_slits_gap()
         return None, None
 
+    @log_inout
     def get_beam_shape(self):
         """
         Descript. :
@@ -955,6 +988,7 @@ class ALBACollect(AbstractCollect):
         if self.beam_info_hwobj is not None:
             return self.beam_info_hwobj.get_beam_shape()
 
+    @log_inout
     def get_measured_intensity(self):
         """
         Descript. :
@@ -962,6 +996,7 @@ class ALBACollect(AbstractCollect):
         if self.flux_hwobj is not None:
             return self.flux_hwobj.get_flux()
 
+    @log_inout
     def get_machine_current(self):
         """
         Descript. :
@@ -989,12 +1024,14 @@ class ALBACollect(AbstractCollect):
         else:
             return ''
 
+    @log_inout
     def get_flux(self):
         """
         Descript. :
         """
         return self.get_measured_intensity()
 
+    @log_inout
     def trigger_auto_processing(self, event, frame):
         if event == "after":
             dc_pars = self.current_dc_parameters

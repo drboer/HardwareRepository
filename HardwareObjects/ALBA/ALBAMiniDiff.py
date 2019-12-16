@@ -42,6 +42,7 @@ import gevent
 
 import queue_model_objects_v1 as queue_model_objects
 
+from HardwareRepository.Utils import log_inout, timeit
 from GenericDiffractometer import GenericDiffractometer, DiffractometerState
 from taurus.core.tango.enums import DevState
 
@@ -74,6 +75,7 @@ class ALBAMiniDiff(GenericDiffractometer):
 
         self.omegaz_reference = None
 
+    @log_inout
     def init(self):
         self.logger.debug("Initializing {0}".format(self.__class__.__name__))
         self.calibration_hwobj = self.getObjectByRole("calibration")
@@ -329,6 +331,8 @@ class ALBAMiniDiff(GenericDiffractometer):
 
     # We are using the sample_centring module. this is not used anymore
     # Not true, we use it!
+    @log_inout
+    @timeit
     def start_manual_centring(self, *args, **kwargs):
         """
         Start manual centring. Overrides GenericDiffractometer method.
@@ -340,6 +344,8 @@ class ALBAMiniDiff(GenericDiffractometer):
             self.logger.info("Failed to prepare diffractometer for centring")
             self.invalidate_centring()
 
+    @log_inout
+    @timeit
     def start_auto_centring(self, *args, **kwargs):
         """
         Start manual centring. Overrides GenericDiffractometer method.
@@ -558,6 +564,8 @@ class ALBAMiniDiff(GenericDiffractometer):
         self.wait_device_ready()
 
     # TODO: define phases as enum members.
+    @log_inout
+    @timeit
     def set_phase(self, phase, timeout=None):
         #TODO: implement timeout. Current API to fulfilll the API.
         """

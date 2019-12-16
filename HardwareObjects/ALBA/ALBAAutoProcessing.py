@@ -37,6 +37,7 @@ import logging
 
 from ALBAClusterJob import ALBAEdnaProcJob
 from HardwareRepository.BaseHardwareObjects import HardwareObject
+from HardwareRepository.Utils import log_inout, timeit
 from XSDataCommon import XSDataFile, XSDataString, XSDataInteger
 from XSDataAutoprocv1_0 import XSDataAutoprocInput
 
@@ -55,8 +56,8 @@ class ALBAAutoProcessing(HardwareObject):
         self.chan_beamy = None
         self.input_file = None
 
+    @log_inout
     def init(self):
-        self.logger.debug("Initializing {0}".format(self.__class__.__name__))
         self.template_dir = self.getProperty("template_dir")
         self.logger.debug("Autoprocessing template_dir = %s" %
                                        self.template_dir)
@@ -64,6 +65,8 @@ class ALBAAutoProcessing(HardwareObject):
         self.chan_beamx = self.getChannelObject('beamx')
         self.chan_beamy = self.getChannelObject('beamy')
 
+    @log_inout
+    @timeit
     def create_input_files(self, dc_pars):
 
         xds_dir = dc_pars['xds_dir']
@@ -208,6 +211,7 @@ class ALBAAutoProcessing(HardwareObject):
         ednaproc_input.exportToFile(ednaproc_input_file)
         self.input_file = ednaproc_input_file
 
+    @log_inout
     def trigger_auto_processing(self, dc_pars):
         self.logger.debug("Triggering auto processing.")
 

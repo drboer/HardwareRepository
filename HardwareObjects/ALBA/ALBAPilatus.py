@@ -35,6 +35,7 @@ import time
 
 from datetime import datetime
 from AbstractDetector import AbstractDetector
+from HardwareRepository.Utils import log_inout, timeit
 from HardwareRepository.BaseHardwareObjects import HardwareObject
 from taurus import Device
 
@@ -94,8 +95,8 @@ class ALBAPilatus(AbstractDetector, HardwareObject):
 
         self.headers = {}
 
+    @log_inout
     def init(self):
-        self.logger.debug("Initializing {0}".format(self.__class__.__name__))
         self.cmd_prepare_acq = self.getCommandObject('prepare_acq')
         self.cmd_start_acq = self.getCommandObject('start_acq')
         self.cmd_abort_acq = self.getCommandObject('abort_acq')
