@@ -4,26 +4,26 @@ import time
 
 def log_inout(func):
     @wraps(func)
-    def wrapper(cls):
+    def wrapper(*args, **kwargs):
         try:
-            cls.logger.debug('[START] {0}'.format(func.__name__))
-            func(cls)
-            cls.logger.debug('[END] {0}'.format(func.__name__))
+            args[0].logger.debug('[START] {0}'.format(func.__name__))
+            func(*args, **kwargs)
+            args[0].logger.debug('[END] {0}'.format(func.__name__))
         except Exception as e:
-            func(cls)
+            func(*args, **kwargs)
     return wrapper
 
 
 def timeit(func):
     @wraps(func)
-    def wrapper(cls):
+    def wrapper(*args, **kwargs):
         try:
             t0 = time.time()
-            func(cls)
+            func(*args, **kwargs)
             et = time.time() - t0
-            cls.logger.debug('[TIMEIT] {0} took {1:.4f} seconds'.format(func.__name__, et))
+            args[0].logger.debug('[TIMEIT] {0} took {1:.4f} seconds'.format(func.__name__, et))
         except Exception as e:
-            func(cls)
+            func(*args, **kwargs)
     return wrapper
 
 
@@ -45,8 +45,8 @@ if __name__ == "__main__":
 
         @log_inout
         @timeit
-        def func(self):
-            time.sleep(2)
+        def func(self, st):
+            time.sleep(st)
 
     c = A()
-    c.func()
+    c.func(2)
