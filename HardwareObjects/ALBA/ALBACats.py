@@ -69,6 +69,7 @@ class ALBACats(Cats90):
         self.omega_position_channel = None
         self.kappa_position_channel = None
         self._chnisDetDistSafe = None
+        self._chnApertureInOut= None
         
         self._chnPathSafe = None
         self._chnCollisionSensorOK = None
@@ -106,6 +107,7 @@ class ALBACats(Cats90):
         self.omega_position_channel = self.getChannelObject("omega_position") # position of the omega axis
         self.kappa_position_channel = self.getChannelObject("kappa_position") # position of the kappa axis
         self._chnisDetDistSafe = self.getChannelObject("DetDistanceSafe")
+        self._chnApertureInOut= self.getChannelObject("ApertureInOut")
 
         self._chnPathSafe = self.getChannelObject("_chnPathSafe")
         self._chnCollisionSensorOK = self.getChannelObject("_chnCollisionSensorOK")
@@ -193,6 +195,10 @@ class ALBACats(Cats90):
         #  TODO check if we can improve the involvement of omega in the calculations.
         # kappa should also be considered. Max kappa angle is 255, speed 17. Thus, at most kappa to zero takes 15 secs
         #ret = self._wait_diff_phase_done('TRANSFER')
+        # TODO: the aperture checks can be removed (also in cats.xml!) when the aperz motor is changed to a servo
+        if self._chnApertureInOut.getValue().upper() != 'OUT': 
+            self.logger.debug("Aperture is in, waiting 12 secs")
+            time.sleep(12) # wait for aperture out, takes 14 secs
         ret1 = self._wait_kappa_zero() 
         ret2 = self._wait_omega_zero() 
         ret3 = self._wait_det_safe()
