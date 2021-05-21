@@ -223,20 +223,20 @@ class ALBAMiniDiff(GenericDiffractometer):
         # overwrite default centring motors configuration from GenericDiffractometer
         # when using sample_centrinig. Fix phiz position to a reference value.
         if self.use_sample_centring:
+            self.omegaz_reference = self.getChannelObject("omegazReference")
+            #if self.getProperty("omegaReference"):
+                #self.omegaz_reference = eval(self.getProperty("omegaReference"))
 
-            if self.getProperty("omegaReference"):
-                self.omegaz_reference = eval(self.getProperty("omegaReference"))
-
-                try:
-                    self.logger.debug(
-                        "Setting omegaz reference position to {0}".format(
-                            self.omegaz_reference['position']))
-                    self.centring_phiz.reference_position = \
-                        self.omegaz_reference['position']
-                except BaseException:
-                    self.logger.warning(
-                        "Invalid value for omegaz reference!")
-                    raise
+                #try:
+                    #self.logger.debug(
+                        #"Setting omegaz reference position to {0}".format(
+                            #self.omegaz_reference['position']))
+                    #self.centring_phiz.reference_position = \
+                        #self.omegaz_reference['position']
+                #except BaseException:
+                    #self.logger.warning(
+                        #"Invalid value for omegaz reference!")
+                    #raise
 
         queue_model_objects.CentredPosition.\
             set_diffractometer_motor_names(
@@ -418,10 +418,12 @@ class ALBAMiniDiff(GenericDiffractometer):
             try:
                 self.phi_motor_hwobj.set_velocity(60)
             except:
-                self.logger.debug("Cannot apply workaround for omega velocity")
+                self.logger.error("Cannot apply workaround for omega velocity")
             if not success:
-                self.logger.info("Cannot set SAMPLE VIEW phase")
+                self.logger.error("Cannot set SAMPLE VIEW phase")
                 return False
+        # TODO: dynamic omegaz_reference
+        self.centring_phiz.reference_position = self.omegaz_reference
 
         return True
 
