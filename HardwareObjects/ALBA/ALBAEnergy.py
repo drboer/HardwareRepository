@@ -107,7 +107,16 @@ class ALBAEnergy(Device):
         self.energy_hwobj.wait_end_of_move()
 
     def move_wavelength(self, value):
-        self.wavelength_hwobj.move(value)
+        # convert wavelength to energy and move energy
+ 
+        current_lambda = self.get_wavelength()
+        kV_from_lambda = 12.398419303652055 / value
+        self.logger.debug("Moving wavelength to %s (E %s). now is %s" % 
+                            (value, kV_from_lambda, current_lambda)
+                         )
+
+        self.move_energy( kV_from_lambda ) 
+        #self.wavelength_hwobj.move(value)
 
     def wait_move_wavelength_done(self):
         self.wavelenght_hwobj.wait_end_of_move()
