@@ -74,6 +74,7 @@ class ALBAMiniDiff(GenericDiffractometer):
         self.kappa_phi_motor_hwobj = None
 
         self.omegaz_reference = None
+        self.omegaz_reference_channel = None
 
     def init(self):
         self.logger.debug("Initializing {0}".format(self.__class__.__name__))
@@ -107,6 +108,8 @@ class ALBAMiniDiff(GenericDiffractometer):
         self.sample_y_motor_hwobj = self.getObjectByRole('sampy')
         self.kappa_motor_hwobj = self.getObjectByRole('kappa')
         self.kappa_phi_motor_hwobj = self.getObjectByRole('kappa_phi')
+        
+        self.omegaz_reference_channel = self.getChannelObject("omegazReference")
 
         if self.phi_motor_hwobj is not None:
             self.connect(
@@ -223,7 +226,8 @@ class ALBAMiniDiff(GenericDiffractometer):
         # overwrite default centring motors configuration from GenericDiffractometer
         # when using sample_centrinig. Fix phiz position to a reference value.
         if self.use_sample_centring:
-            self.omegaz_reference = self.getChannelObject("omegazReference")
+            self.omegaz_reference = self.omegaz_reference_channel.getValue()
+            self.centring_phiz.reference_position = self.omegaz_reference
             #if self.getProperty("omegaReference"):
                 #self.omegaz_reference = eval(self.getProperty("omegaReference"))
 
@@ -326,9 +330,10 @@ class ALBAMiniDiff(GenericDiffractometer):
 
         # Overwrite phiz, which should remain in the actual position, hopefully the center of rotation
         omegaz_diff = 0
-        if self.omegaz_reference != None: 
-            loc_centred_point['phiz'] = self.omegaz_reference['position']
-            omegaz_diff = self.phiz_motor_hwobj.getPosition() - self.omegaz_reference['position'] 
+        if self.omegaz_reference_channel != None: 
+            self.omegaz_reference = self.omegaz_reference_channel.getValue()
+            loc_centred_point['phiz'] = self.omegaz_reference
+            omegaz_diff = self.phiz_motor_hwobj.getPosition() - self.omegaz_reference
         else: 
             loc_centred_point['phiz'] = self.phiz_motor_hwobj.getPosition() 
 
@@ -423,7 +428,8 @@ class ALBAMiniDiff(GenericDiffractometer):
                 self.logger.error("Cannot set SAMPLE VIEW phase")
                 return False
         # TODO: dynamic omegaz_reference
-        self.centring_phiz.reference_position = self.omegaz_reference
+        if self.omegaz_reference_channel != None:
+            self.centring_phiz.reference_position = self.omegaz_reference_channel.getValue()
 
         return True
 
